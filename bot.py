@@ -1,5 +1,5 @@
 import discord
-from discord.ext import commands, tasks
+from discord.ext import commands
 import lyricsgenius
 import os
 import re
@@ -7,8 +7,7 @@ import re
 # --- CONFIG ---
 TOKEN = os.environ.get('DISCORD_TOKEN')
 GENIUS_TOKEN = os.environ.get('GENIUS_ACCESS_TOKEN')
-# ID Channel lu yang udah bener
-TARGET_CHANNEL_ID = 1510507327785144470 
+TARGET_CHANNEL_ID = 1510507327785144470 # ID channel lu
 
 # Setup Intents
 intents = discord.Intents.default()
@@ -18,51 +17,41 @@ genius = lyricsgenius.Genius(GENIUS_TOKEN)
 
 last_played_song = ""
 
-@tasks.loop(seconds=4.5)
-async def check_music():
+@bot.event
+async def on_ready():
+    print(f'Bot Ethereal sudah ON dan siap beraksi secara Instan!')
+
+@bot.event
+async def on_message(message):
     global last_played_song
-    channel = bot.get_channel(TARGET_CHANNEL_ID)
     
-    if not channel:
-        print(f"DEBUG: Bot tidak bisa menemukan channel dengan ID {TARGET_CHANNEL_ID}")
-        return
-    
-    # Ambil 5 pesan terakhir
-    async for message in channel.history(limit=5):
-        # Cek pesan dari Jockie Music yang punya embed
-        if "Jockie" in message.author.name and message.embeds:
+    # Bot cuma dengerin pesan dari Jockie dan di channel yang kita mau
+    if message.author.name == "Jockie Music" and message.channel.id == TARGET_CHANNEL_ID:
+        if message.embeds:
             embed = message.embeds[0]
-            # Gabungin deskripsi dan fields buat dicari teksnya
+            # Ambil semua teks dari embed
             text = (embed.description or "") + " " + " ".join([f.value for f in embed.fields])
             
             if "Started playing" in text:
-                # Log buat debugging di Railway
-                print(f"DEBUG: Jockie sedang memutar: {text}")
-                
+                # Bersihin nama lagu
                 raw = text.split("Started playing")[-1].strip()
                 title = re.sub(r'\(.*?\)', '', raw).split(" by ")[0].strip()
                 
-                # Biar nggak spam
+                # Biar nggak dobel kalau Jockie nge-post berkali-kali
                 if title != last_played_song:
                     last_played_song = title
-                    await channel.send(f"Auto-Sync: {title}...")
+                    # Kirim notifikasi instan
+                    await message.channel.send(f"Auto-Sync (Instan): {title}...")
                     
-                    # Cari lagu
+                    # Cari lirik
                     song = genius.search_song(title)
                     if song:
-                        lirik = song.lyrics[:2000]
-                        embed = discord.Embed(title=song.title, description=lirik, color=0x87CEEB)
-                        embed.set_footer(text=f"Artist: {song.artist}")
-                        await channel.send(embed=embed)
-                    else:
-                        await channel.send(f"Waduh, lirik buat '{title}' nggak ketemu.")
-                break
-
-@bot.event
-async def on_ready():
-    if not check_music.is_running():
-        check_music.start()
-    print(f'Bot Ethereal sudah ON dan siap memantau!')
+                        embed_lirik = discord.Embed(title=song.title, description=song.lyrics[:2000], color=0x87CEEB)
+                        embed_lirik.set_footer(text=f"Artist: {song.artist}")
+                        await message.channel.send(embed=embed_lirik)
+    
+    # WAJIB: Biar command !lirik tetep bisa dipake
+    await bot.process_commands(message)
 
 @bot.command()
 async def lirik(ctx, *, judul_lagu):
