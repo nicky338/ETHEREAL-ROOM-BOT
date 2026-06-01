@@ -36,23 +36,22 @@ async def lirik(ctx, *, judul_lagu):
 @bot.command()
 async def sync(ctx):
     found = False
-    async for message in ctx.channel.history(limit=5):
-        # Cek apakah pengirimnya si Jookie Music
-        if "Jookie" in message.author.name: 
-            # Kita baca konten teksnya
-            if message.content:
-                text = message.content
-                # Cari kata 'Started playing'
-                if "Started playing" in text:
-                    # Ambil judul setelah kata 'Started playing'
-                    song_info = text.replace("Started playing", "").strip()
-                    
-                    await ctx.send(f"Ketemu! Jookie lagi muter: {song_info}. Bentar ya...")
-                    await lirik(ctx, judul_lagu=song_info)
-                    found = True
-                    break
+    # Kita cari 15 pesan terakhir di channel
+    async for message in ctx.channel.history(limit=15):
+        # Cek apakah author-nya adalah Jockie Music (pake 'ci', bukan 'oo')
+        if "Jockie" in message.author.name: 
+            # Kita cek teks pesannya
+            if message.content and "Started playing" in message.content:
+                # Bersihin teksnya buat dapetin judul lagu
+                song_info = message.content.replace("Started playing", "").strip()
+                
+                await ctx.send(f"Ketemu! Jockie lagi muter: {song_info}. Bentar ya...")
+                # Panggil fungsi lirik
+                await lirik(ctx, judul_lagu=song_info)
+                found = True
+                break 
     
     if not found:
-        await ctx.send("Waduh, nggak nemu pesan lagu dari Jookie Music di 5 chat terakhir.")
+        await ctx.send("Waduh, nggak nemu pesan lagu dari Jockie Music di 15 chat terakhir, Ky.")
 
 bot.run(TOKEN)
