@@ -36,22 +36,34 @@ async def lirik(ctx, *, judul_lagu):
 @bot.command()
 async def sync(ctx):
     found = False
-    # Kita cari 15 pesan terakhir di channel
     async for message in ctx.channel.history(limit=15):
-        # Cek apakah author-nya adalah Jockie Music (pake 'ci', bukan 'oo')
-        if "Jockie" in message.author.name: 
-            # Kita cek teks pesannya
-            if message.content and "Started playing" in message.content:
-                # Bersihin teksnya buat dapetin judul lagu
-                song_info = message.content.replace("Started playing", "").strip()
+        if "Jockie" in message.author.name and message.embeds:
+            embed = message.embeds[0]
+            
+            # Kita cek setiap field di dalam embed
+            # Biasanya Jockie naruh info lagu di field pertama atau deskripsi
+            search_text = ""
+            
+            # Cek di deskripsi
+            if embed.description:
+                search_text += embed.description
+            
+            # Cek di fields (ini biasanya tempat "Started playing...")
+            for field in embed.fields:
+                search_text += " " + field.value
+            
+            # Sekarang kita cari "Started playing" di semua teks yang udah dikumpulin
+            if "Started playing" in search_text:
+                # Ambil teks setelah "Started playing"
+                # Kita bersihin biar dapet judul lagu yang bersih
+                song_info = search_text.split("Started playing")[-1].strip()
                 
                 await ctx.send(f"Ketemu! Jockie lagi muter: {song_info}. Bentar ya...")
-                # Panggil fungsi lirik
                 await lirik(ctx, judul_lagu=song_info)
                 found = True
-                break 
+                break
     
     if not found:
-        await ctx.send("Waduh, nggak nemu pesan lagu dari Jockie Music di 15 chat terakhir, Ky.")
+        await ctx.send("Waduh, Jockie-nya masih sembunyi nih. Gak nemu data lagu di embed-nya.")
 
 bot.run(TOKEN)
