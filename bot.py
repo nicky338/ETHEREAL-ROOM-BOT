@@ -41,7 +41,7 @@ async def on_message(message):
                 if title != last_played_song:
                     last_played_song = title
                     # Kirim notifikasi instan
-                    await message.channel.send(f"Auto-Sync (Instan): {title}...")
+                    await message.channel.send(f"Auto-Sync (Playing): {title}...")
                     
                     # Cari lirik
                     song = genius.search_song(title)
