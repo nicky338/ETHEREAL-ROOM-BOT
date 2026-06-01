@@ -33,4 +33,31 @@ async def lirik(ctx, *, judul_lagu):
     else:
         await ctx.send("Waduh, liriknya nggak ketemu nih, Ky. Coba cek judulnya lagi!")
 
+@bot.command()
+async def sync(ctx):
+    # Bot ngebaca 5 pesan terakhir di channel buat nyari Jookie Music
+    found = False
+    async for message in ctx.channel.history(limit=5):
+        # Cek apakah pengirimnya si Jookie Music
+        if message.author.name == "Jookie Music": 
+            # Ngambil judul lagu dari field/text Jookie Music
+            # Biasanya Jookie naruh judul di field atau description embed
+            if message.embeds:
+                # Kita ambil teks dari field pertama kalau ada, atau dari description
+                song_info = message.embeds[0].description
+                
+                # Pembersih teks sederhana biar bot nggak bingung
+                if "Started playing" in song_info:
+                    song_info = song_info.replace("Started playing", "").strip()
+                
+                await ctx.send(f"Ditemukan! Jookie lagi muter: {song_info}. Lagi nyari liriknya ya...")
+                
+                # Langsung panggil fungsi lirik
+                await lirik(ctx, judul_lagu=song_info)
+                found = True
+                break 
+    
+    if not found:
+        await ctx.send("Waduh, nggak nemu pesan lagu dari Jookie Music di 5 chat terakhir, Ky.")
+
 bot.run(TOKEN)
