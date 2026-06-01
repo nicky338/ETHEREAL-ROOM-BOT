@@ -19,7 +19,7 @@ genius = lyricsgenius.Genius(GENIUS_TOKEN)
 async def on_ready():
     # Status bot
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name="!lirik <judul lagu>"))
-    print(f'ETHEREAL ROOM Bot Lirik udah ON, {bot.user} siap beraksi! 🗿')
+    print(f'ETHEREAL ROOM Bot Lirik udah ON, {bot.user} siap beraksi!')
 
 @bot.command()
 async def lirik(ctx, *, judul_lagu):
@@ -31,33 +31,32 @@ async def lirik(ctx, *, judul_lagu):
         embed.set_footer(text=f"Artist: {song.artist}")
         await ctx.send(embed=embed)
     else:
-        await ctx.send("Waduh, liriknya nggak ketemu nih, Ky. Coba cek judulnya lagi!")
+        await ctx.send("Waduh, liriknya nggak ketemu nih. Coba cek judulnya lagi ya")
 
 @bot.command()
 async def sync(ctx):
-    # Bot ngebaca 5 pesan terakhir di channel buat nyari Jookie Music
     found = False
     async for message in ctx.channel.history(limit=5):
-        # Cek apakah pengirimnya si Jookie Music
         if message.author.name == "Jookie Music": 
-            # Ngambil judul lagu dari field/text Jookie Music
-            # Biasanya Jookie naruh judul di field atau description embed
             if message.embeds:
-                # Kita ambil teks dari field pertama kalau ada, atau dari description
-                song_info = message.embeds[0].description
+                embed = message.embeds[0]
                 
-                # Pembersih teks sederhana biar bot nggak bingung
-                if "Started playing" in song_info:
-                    song_info = song_info.replace("Started playing", "").strip()
+                # Coba cari judul dari deskripsi ATAU dari fields
+                song_info = ""
+                if embed.description:
+                    song_info = embed.description
+                elif embed.fields:
+                    song_info = embed.fields[0].value # Biasanya ada di sini
                 
-                await ctx.send(f"Ditemukan! Jookie lagi muter: {song_info}. Lagi nyari liriknya ya...")
+                # Pembersih teks
+                song_info = song_info.replace("Started playing", "").strip()
                 
-                # Langsung panggil fungsi lirik
+                await ctx.send(f"Ketemu! Jookie lagi muter: {song_info}. Bentar ya...")
                 await lirik(ctx, judul_lagu=song_info)
                 found = True
-                break 
+                break
     
     if not found:
-        await ctx.send("Waduh, nggak nemu pesan lagu dari Jookie Music di 5 chat terakhir, Ky.")
+        await ctx.send("Masih nggak nemu... Coba deh liat pesan Jookie Music-nya, judulnya ada di bagian mana?")
 
 bot.run(TOKEN)
