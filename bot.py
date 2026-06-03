@@ -18,7 +18,9 @@ last_played_song = ""
 
 @bot.event
 async def on_ready():
-    print(f'Bot Ethereal Ready!')
+    print(f'Bot Ethereal sudah ON!')
+    # Set status awal
+    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="musik..."))
 
 @bot.event
 async def on_message(message):
@@ -30,7 +32,7 @@ async def on_message(message):
             text = (embed.description or "") + " " + " ".join([f.value for f in embed.fields])
             
             if "Started playing" in text:
-                # Logic awal yang terbukti stabil
+                # Logic stabil
                 raw = text.split("Started playing")[-1].strip()
                 title = re.sub(r'\(.*?\)', '', raw).split(" by ")[0].strip()
                 
@@ -38,13 +40,17 @@ async def on_message(message):
                     last_played_song = title
                     await message.channel.send(f"Auto-Sync (Playing): {title}")
                     
+                    # --- FITUR "LISTENING TO" (Update Status) ---
+                    activity = discord.Activity(type=discord.ActivityType.listening, name=title)
+                    await bot.change_presence(activity=activity)
+                    
                     song = genius.search_song(title)
                     if song:
                         embed_lirik = discord.Embed(title=song.title, description=song.lyrics[:2000], color=0x87CEEB)
                         embed_lirik.set_footer(text=f"Artist: {song.artist}")
                         await message.channel.send(embed=embed_lirik)
                     else:
-                        await message.channel.send("Lyrics not found")
+                        await message.channel.send("Lirik tidak ketemu.")
     
     await bot.process_commands(message)
 
