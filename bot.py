@@ -27,16 +27,19 @@ async def on_message(message):
     if message.author.name == "Jockie Music" and message.channel.id == TARGET_CHANNEL_ID:
         if message.embeds:
             embed = message.embeds[0]
-            text = (embed.description or "") + " " + " ".join([f.value for f in embed.fields])
+            # Pakai full_text biar bisa baca semua tulisan, URL atau bukan
+            full_text = (embed.description or "") + " " + (embed.title or "") + " " + " ".join([f.value for f in embed.fields]) + " " + (embed.url or "")
             
-            if "Started playing" in text:
-                # Filter YouTube tetap kita jaga biar gak berisik
-                embed_url = embed.url or ""
-                if "youtube.com" in embed_url or "youtu.be" in embed_url:
-                    return 
+            if "Started playing" in full_text:
+                # FILTER: Tetap jaga benteng YouTube di sini
+                is_youtube = "youtube.com" in full_text.lower() or "youtu.be" in full_text.lower()
+                is_playlist = any(kw.lower() in full_text.lower() for kw in ["Full Album", "Playlist", "Album"])
                 
-                # Logic awal yang terbukti stabil
-                raw = text.split("Started playing")[-1].strip()
+                if is_youtube or is_playlist:
+                    return # Bot diem aja kalau YouTube/Album
+                
+                # Logic awal yang stabil
+                raw = full_text.split("Started playing")[-1].strip()
                 title = re.sub(r'\(.*?\)', '', raw).split(" by ")[0].strip()
                 
                 if title != last_played_song:
