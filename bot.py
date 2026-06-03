@@ -3,6 +3,7 @@ from discord.ext import commands
 import lyricsgenius
 import os
 import re
+import random
 
 # --- CONFIG ---
 TOKEN = os.environ.get('DISCORD_TOKEN')
@@ -19,8 +20,8 @@ last_played_song = ""
 @bot.event
 async def on_ready():
     print(f'Bot Ethereal sudah ON!')
-    # Set status awal custom biar estetik
-    await bot.change_presence(activity=discord.CustomActivity(name="Lagi santai dulu..."))
+    # Set status awal
+    await bot.change_presence(activity=discord.CustomActivity(name="Just chilling..."))
 
 @bot.event
 async def on_message(message):
@@ -39,18 +40,28 @@ async def on_message(message):
                     last_played_song = title
                     await message.channel.send(f"Auto-Sync (Playing): {title}")
                     
-                    # --- FITUR CUSTOM ACTIVITY ---
-                    # Tulisan di profil bot bakal jadi "Lagi asik dengerin: [Nama Lagu]"
-                    activity = discord.CustomActivity(name=f"Lagi asik dengerin: {title}")
-                    await bot.change_presence(activity=activity)
+                    # --- FITUR STATUS ACAK (RANDOMIZER) ---
+                    moods = [
+                        "Feeling: {title} 🎧",
+                        "Currently loving: {title} ✨",
+                        "Deep in: {title} 🌌",
+                        "Thinking about: {title} 💭",
+                        "Floating with: {title} ☁️",
+                        "Healing with: {title} 🩹",
+                        "Drowning in: {title} 🌊",
+                        "Lost in: {title} 🌙"
+                    ]
+                    status_text = random.choice(moods).format(title=title)
+                    await bot.change_presence(activity=discord.CustomActivity(name=status_text))
                     
+                    # --- LIRIK BAHASA INGGRIS ---
                     song = genius.search_song(title)
                     if song:
                         embed_lirik = discord.Embed(title=song.title, description=song.lyrics[:2000], color=0x87CEEB)
                         embed_lirik.set_footer(text=f"Artist: {song.artist}")
                         await message.channel.send(embed=embed_lirik)
                     else:
-                        await message.channel.send("Lyrics could not be found..")
+                        await message.channel.send("Lyrics not found.")
     
     await bot.process_commands(message)
 
