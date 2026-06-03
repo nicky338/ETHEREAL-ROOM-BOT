@@ -5,10 +5,9 @@ import os
 import re
 
 # --- CONFIG ---
-# Ambil dari Environment Variables (Setting di Railway)
+# Pastikan variabel ini sudah di-set di dashboard Railway
 TOKEN = os.environ.get('DISCORD_TOKEN')
 GENIUS_TOKEN = os.environ.get('GENIUS_ACCESS_TOKEN')
-# Pastikan ID channel di Railway juga angka ya
 TARGET_CHANNEL_ID = int(os.environ.get('TARGET_CHANNEL_ID', 0))
 
 # Setup Intents
@@ -35,25 +34,23 @@ async def on_message(message):
             text = (embed.description or "") + " " + " ".join([f.value for f in embed.fields])
             
             if "Started playing" in text:
-                # 1. Cek URL embed untuk deteksi platform
+                # 1. Cek URL embed untuk deteksi platform (termasuk ?si= tracking)
                 embed_url = embed.url or ""
                 
-                # 2. Logic filter YouTube (Skip kalau YouTube)
+                # 2. Logic filter YouTube: Skip otomatis jika link mengandung youtube.com atau youtu.be
                 if "youtube.com" in embed_url or "youtu.be" in embed_url:
-                    print("YouTube terdeteksi, skip lirik.")
-                    return 
+                    print("Lagu dari YouTube terdeteksi, skip lirik.")
+                    return # Berhenti di sini, tidak lanjut ke proses pencarian
                 
-                # 3. Bersihin nama lagu
+                # 3. Proses lanjut untuk Spotify/Apple Music
                 raw = text.split("Started playing")[-1].strip()
                 title = re.sub(r'\(.*?\)', '', raw).split(" by ")[0].strip()
                 
-                # Biar nggak dobel kalau Jockie nge-post berkali-kali
                 if title != last_played_song:
                     last_played_song = title
-                    # Kirim notifikasi instan
                     await message.channel.send(f"Auto-Sync (Playing): {title}")
                     
-                    # Cari lirik
+                    # Cari lirik di Genius
                     song = genius.search_song(title)
                     if song:
                         embed_lirik = discord.Embed(title=song.title, description=song.lyrics[:2000], color=0x87CEEB)
