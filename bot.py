@@ -5,7 +5,6 @@ import os
 import re
 
 # --- CONFIG ---
-# Pastikan variabel ini sudah di-set di dashboard Railway
 TOKEN = os.environ.get('DISCORD_TOKEN')
 GENIUS_TOKEN = os.environ.get('GENIUS_ACCESS_TOKEN')
 TARGET_CHANNEL_ID = int(os.environ.get('TARGET_CHANNEL_ID', 0))
@@ -26,31 +25,31 @@ async def on_ready():
 async def on_message(message):
     global last_played_song
     
-    # Bot cuma dengerin pesan dari Jockie dan di channel yang kita mau
+    # Filter channel dan author
     if message.author.name == "Jockie Music" and message.channel.id == TARGET_CHANNEL_ID:
         if message.embeds:
             embed = message.embeds[0]
-            # Ambil semua teks dari embed
-            text = (embed.description or "") + " " + " ".join([f.value for f in embed.fields])
+            # Gabungin semua teks embed buat dideteksi
+            full_text = (embed.description or "") + " " + (embed.title or "") + " " + " ".join([f.value for f in embed.fields])
             
-            if "Started playing" in text:
-                # 1. Cek URL embed untuk deteksi platform (termasuk ?si= tracking)
-                embed_url = embed.url or ""
+            if "Started playing" in full_text:
+                # 1. FILTER CERDAS: Cek teks, bukan cuma link
+                # Kalau ada kata "YouTube" atau kata-kata playlist, langsung skip
+                is_youtube_content = "youtube" in full_text.lower()
+                is_playlist = any(keyword.lower() in full_text.lower() for keyword in ["Full Album", "Playlist", "Album", "Lagu Pop"])
                 
-                # 2. Logic filter YouTube: Skip otomatis jika link mengandung youtube.com atau youtu.be
-                if "youtube.com" in embed_url or "youtu.be" in embed_url:
-                    print("Lagu dari YouTube terdeteksi, skip lirik.")
-                    return # Berhenti di sini, tidak lanjut ke proses pencarian
-                
-                # 3. Proses lanjut untuk Spotify/Apple Music
-                raw = text.split("Started playing")[-1].strip()
+                if is_youtube_content or is_playlist:
+                    print("Konten YouTube atau Playlist terdeteksi, skip lirik.")
+                    return # Berhenti, nggak usah cari lirik!
+
+                # 2. PROSES LANJUT (Cuma kalau lolos filter)
+                raw = full_text.split("Started playing")[-1].strip()
                 title = re.sub(r'\(.*?\)', '', raw).split(" by ")[0].strip()
                 
                 if title != last_played_song:
                     last_played_song = title
                     await message.channel.send(f"Auto-Sync (Playing): {title}")
                     
-                    # Cari lirik di Genius
                     song = genius.search_song(title)
                     if song:
                         embed_lirik = discord.Embed(title=song.title, description=song.lyrics[:2000], color=0x87CEEB)
@@ -59,7 +58,6 @@ async def on_message(message):
                     else:
                         await message.channel.send("Lirik tidak ketemu.")
     
-    # WAJIB: Biar command !lirik tetep bisa dipake
     await bot.process_commands(message)
 
 @bot.command()
