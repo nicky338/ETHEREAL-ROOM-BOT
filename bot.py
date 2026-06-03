@@ -40,6 +40,9 @@ async def on_message(message):
                     last_played_song = title
                     await message.channel.send(f"Auto-Sync (Playing): {title}")
                     
+                    # 1. Bersihkan judulnya dulu sampai kinclong
+                    title = title.replace("*", "").replace("[", "").replace("]", "").strip()
+                    
                     # --- FITUR STATUS ACAK (RANDOMIZER) ---
                     moods = [
                         "Feeling: {title} 🎧",
