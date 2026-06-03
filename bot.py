@@ -20,13 +20,16 @@ last_played_song = ""
 @bot.event
 async def on_ready():
     print(f'Bot Ethereal sudah ON!')
-    # Set status awal
-    await bot.change_presence(activity=discord.CustomActivity(name="Just chilling..."))
+    await bot.change_presence(activity=None)
 
 @bot.event
 async def on_message(message):
     global last_played_song
     
+    # Debug log
+    if message.author.name == "Jockie Music":
+        print(f"Bot denger pesan dari Jockie: {message.content[:20]}") 
+
     if message.author.name == "Jockie Music" and message.channel.id == TARGET_CHANNEL_ID:
         if message.embeds:
             embed = message.embeds[0]
@@ -34,20 +37,20 @@ async def on_message(message):
             
             if "Started playing" in text:
                 raw = text.split("Started playing")[-1].strip()
-                title = re.sub(r'\(.*?\)', '', raw).split(" by ")[0].strip()
+                title = re.sub(r'[\(\[].*?[\)\]]', '', raw).split(" by ")[0].strip()
+                title = title.replace("*", "").replace("[", "").replace("]", "").strip()
                 
                 if title != last_played_song:
                     last_played_song = title
-                    await message.channel.send(f"Auto-Sync (Playing): {title}")
                     
-                    # 1. Bersihkan judul
-                    title = title.replace("*", "").replace("[", "").replace("]", "").strip()
+                    # 1. Auto-Sync Message
+                    await message.channel.send(f"Auto-Sync (Playing): **{title}**")
                     
-                    # 2. Set status "Listening to" (biar masuk kotak Jockie Music)
+                    # 2. Update status ke "Listening to"
                     activity = discord.Activity(type=discord.ActivityType.listening, name=title)
                     await bot.change_presence(activity=activity)
                     
-                    # 3. Kirim Mood lewat chat biar tetep dapet vibe-nya
+                    # 3. Kirim pesan vibe
                     moods = [
                         "Feeling: {title} 🎧", "Currently loving: {title} ✨", 
                         "Deep in: {title} 🌌", "Thinking about: {title} 💭",
@@ -57,7 +60,7 @@ async def on_message(message):
                     status_text = random.choice(moods).format(title=title)
                     await message.channel.send(f"Status: *{status_text}*")
                     
-                    # --- LIRIK BAHASA INGGRIS ---
+                    # 4. Cari lirik
                     song = genius.search_song(title)
                     if song:
                         embed_lirik = discord.Embed(title=song.title, description=song.lyrics[:2000], color=0x87CEEB)
