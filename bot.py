@@ -27,20 +27,28 @@ async def on_message(message):
     if message.author.name == "Jockie Music" and message.channel.id == TARGET_CHANNEL_ID:
         if message.embeds:
             embed = message.embeds[0]
-            # Pakai full_text biar bisa baca semua tulisan, URL atau bukan
-            full_text = (embed.description or "") + " " + (embed.title or "") + " " + " ".join([f.value for f in embed.fields]) + " " + (embed.url or "")
+            
+            # CEK PROVIDER: Ini cara paling akurat buat nangkep YouTube
+            # Jockie biasanya naruh provider di embed.provider.name
+            provider_name = (embed.provider.name.lower() if embed.provider and embed.provider.name else "")
+            
+            # Deteksi kalau YouTube
+            is_youtube = "youtube" in provider_name
+            
+            # Ambil teks buat jaga-jaga kalau provider-nya gak kedeteksi
+            full_text = (embed.description or "") + " " + (embed.title or "") + " " + (embed.url or "")
+            is_youtube_text = "youtube.com" in full_text.lower() or "youtu.be" in full_text.lower()
             
             if "Started playing" in full_text:
-                # FILTER: Tetap jaga benteng YouTube di sini
-                is_youtube = "youtube.com" in full_text.lower() or "youtu.be" in full_text.lower()
-                is_playlist = any(kw.lower() in full_text.lower() for kw in ["Full Album", "Playlist", "Album"])
-                
-                if is_youtube or is_playlist:
-                    return # Bot diem aja kalau YouTube/Album
-                
-                # Logic awal yang stabil
+                # FILTER: Kalau terdeteksi YouTube, langsung kabur!
+                if is_youtube or is_youtube_text:
+                    print("YouTube terdeteksi via provider/link, skip lirik.")
+                    return 
+
+                # PEMERSIH JUDUL
                 raw = full_text.split("Started playing")[-1].strip()
-                title = re.sub(r'\(.*?\)', '', raw).split(" by ")[0].strip()
+                clean_title = re.sub(r'[\(\[].*?[\)\]]', '', raw)
+                title = clean_title.split(" by ")[0].strip()
                 
                 if title != last_played_song:
                     last_played_song = title
