@@ -5,6 +5,18 @@ import os
 import re
 import random
 
+# --- FUNGSI MOOD DETECTOR ---
+def get_mood(title):
+    title = title.lower()
+    if any(word in title for word in ["hujan", "sepi", "sad", "rindu", "perempuan", "gila", "mati"]):
+        return "Feeling: Melancholic 🌧️"
+    elif any(word in title for word in ["happy", "senang", "cerah", "cahaya", "bunga"]):
+        return "Feeling: Radiant ☀️"
+    elif any(word in title for word in ["malam", "mimpi", "tidur", "fajar", "bintang"]):
+        return "Feeling: Dreaming 🌙"
+    else:
+        return "Feeling: Vibing 🎧"
+
 # --- CONFIG ---
 TOKEN = os.environ.get('DISCORD_TOKEN')
 GENIUS_TOKEN = os.environ.get('GENIUS_ACCESS_TOKEN')
@@ -45,11 +57,12 @@ async def on_message(message):
                     # 1. Konfirmasi Auto-Sync
                     await message.channel.send(f"Auto-Sync (Playing): **{title}**")
                     
-                    # 2. Update status "Listening to"
-                    activity = discord.Activity(type=discord.ActivityType.listening, name=title)
+                    # 2. Update status dengan Mood Detector
+                    mood = get_mood(title)
+                    activity = discord.Activity(type=discord.ActivityType.listening, name=f"{mood} | {title}")
                     await bot.change_presence(activity=activity)
                     
-                    # 3. FITUR GJ (RANDOMIZER MOOD)
+                    # 3. Fitur Randomizer Mood (Status di chat)
                     moods = [
                         "Feeling: {title} 🎧", "Currently loving: {title} ✨", 
                         "Deep in: {title} 🌌", "Thinking about: {title} 💭",
@@ -59,7 +72,7 @@ async def on_message(message):
                     status_text = random.choice(moods).format(title=title)
                     await message.channel.send(f"Status: *{status_text}*")
                     
-                  # 4. Cari lirik
+                    # 4. Cari lirik dengan Vibe Colors
                     song = genius.search_song(title)
                     if song:
                         vibe_colors = [
